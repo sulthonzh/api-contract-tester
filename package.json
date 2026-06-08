@@ -34,7 +34,7 @@
     "inquirer": "^8.2.5",
     "js-yaml": "^4.1.0",
     "axios": "^1.6.0",
-    "diff": "^5.1.0"
+    "diff": "^9.0.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.3",
