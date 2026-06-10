@@ -27,6 +27,8 @@ export class ReportGenerator {
         return this.generateJSONReport(report, filename);
       case 'yaml':
         return this.generateYAMLReport(report, filename);
+      case 'markdown':
+        return this.generateMarkdownReport(report, filename);
       case 'html':
         return this.generateHTMLReport(report, filename);
       case 'pretty':
@@ -315,6 +317,57 @@ export class ReportGenerator {
     }
     
     return sections.join('');
+  }
+
+  private generateMarkdownReport(report: TestReport, filename: string): string {
+    const filePath = path.join(this.reportDir, `${filename}.md`);
+    const { suite, timestamp, duration, totalTests, passed, failed, warnings, results, summary } = report;
+
+    let md = `# API Contract Test Report\n\n`;
+    md += `**Suite:** ${suite}  \n`;
+    md += `**Date:** ${timestamp.toISOString()}  \n`;
+    md += `**Duration:** ${duration}ms  \n\n`;
+
+    md += `## Summary\n\n`;
+    md += `| Metric | Value |\n`;
+    md += `|---|---|\n`;
+    md += `| Total Tests | ${totalTests} |\n`;
+    md += `| Passed | ${passed} |\n`;
+    md += `| Failed | ${failed} |\n`;
+    md += `| Warnings | ${warnings} |\n`;
+    md += `| Success Rate | ${summary.successRate}% |\n`;
+    md += `| Avg Response Time | ${summary.averageResponseTime}ms |\n\n`;
+
+    md += `## Results\n\n`;
+    md += `| Endpoint | Method | Status | Duration | Message |\n`;
+    md += `|---|---|---|---|---|\n`;
+
+    for (const result of results) {
+      const icon = result.status === 'pass' ? '✅' : result.status === 'fail' ? '❌' : '⚠️';
+      md += `| ${result.endpoint} | ${result.method} | ${icon} ${result.status} | ${result.duration}ms | ${result.message} |\n`;
+    }
+
+    // Detail failures and warnings
+    const issues = results.filter(r => r.status !== 'pass');
+    if (issues.length > 0) {
+      md += `\n## Issues\n\n`;
+      for (const issue of issues) {
+        const icon = issue.status === 'fail' ? '❌' : '⚠️';
+        md += `### ${icon} ${issue.method} ${issue.endpoint}\n\n`;
+        md += `**Status:** ${issue.status} | **Duration:** ${issue.duration}ms\n\n`;
+        md += `${issue.message}\n\n`;
+        if (issue.details?.differences?.length) {
+          md += `Differences:\n`;
+          for (const diff of issue.details.differences) {
+            md += `- ${diff}\n`;
+          }
+          md += `\n`;
+        }
+      }
+    }
+
+    fs.writeFileSync(filePath, md);
+    return filePath;
   }
 
   private generatePrettyReport(report: TestReport): string {

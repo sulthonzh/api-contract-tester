@@ -79,5 +79,5 @@ export interface TestConfig {
   headers?: Record<string, string>;
   parallel?: boolean;
   verbose?: boolean;
-  outputFormat?: 'json' | 'yaml' | 'html' | 'pretty';
+  outputFormat?: 'json' | 'yaml' | 'html' | 'markdown' | 'pretty';
 }

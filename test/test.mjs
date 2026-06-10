@@ -298,3 +298,101 @@ describe('Report structure', () => {
     assert.equal(report.totalTests, 0);
   });
 });
+
+// ── Markdown Report Tests ────────────────────────────────
+
+describe('Markdown Report', () => {
+  it('generates markdown report file', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'act-md-'));
+    const rg = new ReportGenerator(dir);
+    const report = makeReport({ summary: { ...makeReport().summary, outputFormat: 'markdown' } });
+    const filePath = rg.generateReport(report);
+    assert.ok(filePath.endsWith('.md'));
+    assert.ok(fs.existsSync(filePath));
+    const content = fs.readFileSync(filePath, 'utf8');
+    assert.ok(content.includes('# API Contract Test Report'));
+    assert.ok(content.includes('## Summary'));
+    assert.ok(content.includes('## Results'));
+    assert.ok(content.includes('GET /api/users'));
+    assert.ok(content.includes('POST /api/users'));
+    assert.ok(content.includes('✅'));
+    assert.ok(content.includes('❌'));
+    fs.rmSync(dir, { recursive: true });
+  });
+
+  it('markdown includes issues section for failures', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'act-md-'));
+    const rg = new ReportGenerator(dir);
+    const report = makeReport({ summary: { ...makeReport().summary, outputFormat: 'markdown' } });
+    const filePath = rg.generateReport(report);
+    const content = fs.readFileSync(filePath, 'utf8');
+    assert.ok(content.includes('## Issues'));
+    assert.ok(content.includes('Status mismatch'));
+    assert.ok(content.includes('Status code: expected 201, got 500'));
+    fs.rmSync(dir, { recursive: true });
+  });
+
+  it('markdown omits issues section when all pass', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'act-md-'));
+    const rg = new ReportGenerator(dir);
+    const report = makeReport({
+      totalTests: 1,
+      passed: 1,
+      failed: 0,
+      warnings: 0,
+      results: [
+        {
+          endpoint: 'GET /health',
+          method: 'GET',
+          status: 'pass',
+          message: 'OK',
+          timestamp: new Date(),
+          duration: 10,
+        },
+      ],
+      summary: { successRate: 100, averageResponseTime: 10, errorRate: 0, outputFormat: 'markdown' },
+    });
+    const filePath = rg.generateReport(report);
+    const content = fs.readFileSync(filePath, 'utf8');
+    assert.ok(!content.includes('## Issues'));
+    assert.ok(content.includes('| GET /health'));
+    fs.rmSync(dir, { recursive: true });
+  });
+});
+
+// ── Parallel Validation Tests ────────────────────────────
+
+describe('validateParallel', () => {
+  it('validates endpoints in parallel and preserves order', async () => {
+    const cv = new ContractValidator('http://localhost:1');
+    const endpoints = [
+      { path: '/a', method: 'GET', response: { status: 200 } },
+      { path: '/b', method: 'POST', response: { status: 201 } },
+      { path: '/c', method: 'GET' },
+    ];
+    const results = await cv.validateParallel(endpoints, 2);
+    assert.equal(results.length, 3);
+    assert.equal(results[0].endpoint, 'GET /a');
+    assert.equal(results[1].endpoint, 'POST /b');
+    assert.equal(results[2].endpoint, 'GET /c');
+    // all fail since localhost:1 is unreachable
+    assert.equal(results[0].status, 'fail');
+    assert.equal(results[1].status, 'fail');
+    assert.equal(results[2].status, 'fail');
+  });
+
+  it('handles empty endpoints array', async () => {
+    const cv = new ContractValidator('http://localhost:1');
+    const results = await cv.validateParallel([], 3);
+    assert.equal(results.length, 0);
+  });
+
+  it('handles single endpoint', async () => {
+    const cv = new ContractValidator('http://localhost:1');
+    const results = await cv.validateParallel([
+      { path: '/only', method: 'GET' },
+    ], 5);
+    assert.equal(results.length, 1);
+    assert.ok(results[0].endpoint.includes('/only'));
+  });
+});

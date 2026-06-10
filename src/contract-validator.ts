@@ -155,6 +155,29 @@ export class ContractValidator {
     return results;
   }
 
+  /**
+   * Validate multiple endpoints in parallel with configurable concurrency.
+   * Faster than sequential validation for large API schemas.
+   */
+  async validateParallel(endpoints: APIEndpoint[], concurrency = 5): Promise<ContractResult[]> {
+    const results: ContractResult[] = new Array(endpoints.length);
+    let nextIndex = 0;
+
+    const worker = async (workerId: number) => {
+      while (nextIndex < endpoints.length) {
+        const idx = nextIndex++;
+        if (idx >= endpoints.length) break;
+        const endpoint = endpoints[idx];
+        console.log(chalk.gray(`  [worker-${workerId}] Testing ${endpoint.method} ${endpoint.path}...`));
+        results[idx] = await this.validateEndpoint(endpoint);
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(concurrency, endpoints.length) }, (_, i) => worker(i));
+    await Promise.all(workers);
+    return results;
+  }
+
   generateSummary(results: ContractResult[]): string {
     const passed = results.filter(r => r.status === 'pass').length;
     const failed = results.filter(r => r.status === 'fail').length;
