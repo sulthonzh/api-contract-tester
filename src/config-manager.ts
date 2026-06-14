@@ -50,16 +50,13 @@ export class ConfigManager {
     try {
       this.ensureConfigDir();
       
-      // Load default config
       const defaultConfig = this.getDefaultConfig();
       
-      // Load user config if exists
       if (fs.existsSync(this.configPath)) {
         const userConfig = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
         return this.mergeConfig(defaultConfig, userConfig);
       }
       
-      // Create default config file
       this.saveConfig(defaultConfig);
       return defaultConfig;
     } catch (error) {
