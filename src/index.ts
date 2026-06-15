@@ -13,7 +13,6 @@ import { ConfigManager } from './config-manager';
 import { ReportGenerator } from './report-generator';
 import { TestConfig, APISchema, TestSuite, ContractResult, APIEndpoint, TestReport } from './types';
 
-// Export main classes and types
 export {
   ContractValidator,
   ConfigManager,
@@ -29,8 +28,6 @@ export type {
   TestConfig
 };
 
-// Main CLI entry point
 if (require.main === module) {
-  // CLI will be handled by cli.ts
   console.log('API Contract Tester - Use the CLI interface: act --help');
 }

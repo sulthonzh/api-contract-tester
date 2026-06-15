@@ -6,7 +6,7 @@ import inquirer from 'inquirer';
 import { ContractValidator } from './contract-validator';
 import { ConfigManager } from './config-manager';
 import { ReportGenerator } from './report-generator';
-import { TestConfig, TestSuite, APISchema, ContractResult } from './types';
+import { APISchema, ContractResult } from './types';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,7 +19,6 @@ program
   .description('API Contract Tester - Comprehensive tool for testing API contracts')
   .version('1.0.0');
 
-// Test command
 program
   .command('test')
   .description('Run API contract tests')
@@ -35,11 +34,9 @@ program
   .action(async (options) => {
     try {
       console.log(chalk.blue('🔄 Loading configuration...'));
-      
-      // Load configuration
+
       let config = configManager.loadConfig();
-      
-      // Override config with command line options
+
       if (options.config) {
         const customConfig = JSON.parse(fs.readFileSync(options.config, 'utf8'));
         config = { ...config, ...customConfig };
@@ -54,7 +51,6 @@ program
       
       console.log(chalk.green('✅ Configuration loaded'));
       
-      // Determine test source
       let schema: any;
       let testSource: string;
       
@@ -73,7 +69,6 @@ program
         schema = configManager.loadTestSuite(options.suite);
         testSource = `Test Suite: ${options.suite}`;
       } else {
-        // Interactive mode
         const answers = await inquirer.prompt([
           {
             type: 'list',
@@ -116,7 +111,6 @@ program
       console.log(chalk.gray(`Source: ${testSource}`));
       console.log(chalk.gray(`Base URL: ${config.baseUrl}\n`));
       
-      // Run tests
       const validator = new ContractValidator(config.baseUrl, config.headers);
       console.log(chalk.blue('🚀 Running tests...'));
       
@@ -124,12 +118,9 @@ program
       let results: ContractResult[];
       
       if (schema.endpoints && Array.isArray(schema.endpoints)) {
-        // It's an API schema or test suite
         if ('version' in schema) {
-          // It's an API schema
           results = await validator.validateSchema(schema);
         } else {
-          // It's a test suite
           results = [];
           for (const endpoint of schema.endpoints) {
             results.push(await validator.validateEndpoint(endpoint));
@@ -142,7 +133,6 @@ program
       const duration = Date.now() - startTime;
       console.log(chalk.green(`✅ Tests completed in ${duration}ms`));
       
-      // Generate report
       const report = {
         suite: testSource,
         timestamp: new Date(),
@@ -160,10 +150,8 @@ program
         }
       };
       
-      // Generate and save report
       const reportPath = reportGenerator.generateReport(report);
       
-      // Display results
       const summary = validator.generateSummary(results);
       console.log(summary);
       
@@ -189,7 +177,6 @@ program
       
       console.log(chalk.green(`\n📄 Report saved to: ${reportPath}`));
       
-      // Exit with appropriate code
       const exitCode = results.some(r => r.status === 'fail') ? 1 : 0;
       process.exit(exitCode);
       
@@ -199,7 +186,6 @@ program
     }
   });
 
-// Config command
 program
   .command('config')
   .description('Manage configuration')
@@ -218,7 +204,6 @@ program
       } else if (options.edit) {
         const configPath = configManager['getDefaultConfigPath']();
         console.log(chalk.blue(`Opening editor: ${configPath}`));
-        // In a real implementation, you'd open an editor here
         console.log(chalk.yellow('Edit the file manually and save changes'));
       } else {
         console.log(chalk.yellow('Use --help to see config options'));
@@ -229,7 +214,6 @@ program
     }
   });
 
-// Schema command
 program
   .command('schema')
   .description('Manage API schemas')
@@ -261,7 +245,6 @@ program
     }
   });
 
-// Generate quick schema function
 function generateQuickSchema(baseUrl: string): APISchema {
   return {
     baseUrl,
@@ -302,7 +285,6 @@ function generateQuickSchema(baseUrl: string): APISchema {
   };
 }
 
-// Export for testing
 export { generateQuickSchema };
 
 program.parse();

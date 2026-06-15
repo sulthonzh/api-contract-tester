@@ -20,14 +20,12 @@ export class ContractValidator {
     const startTime = Date.now();
     
     try {
-      // Build request configuration
       const config: any = {
         method: endpoint.method.toLowerCase() as any,
         url: endpoint.path,
         headers: endpoint.headers || {},
       };
 
-      // Add parameters based on method and endpoint type
       if (endpoint.parameters?.query) {
         config.params = endpoint.parameters.query;
       }
@@ -39,7 +37,6 @@ export class ContractValidator {
         }
       }
 
-      // Make the actual API call
       const response = await this.client.request(config);
       const duration = Date.now() - startTime;
 
@@ -57,14 +54,12 @@ export class ContractValidator {
       };
 
       if (endpoint.response) {
-        // Validate status code
         if (endpoint.response.status !== response.status) {
           status = 'fail';
           validationMessage = `Status code mismatch: expected ${endpoint.response.status}, got ${response.status}`;
           details.differences = [`Status code: expected ${endpoint.response.status}, got ${response.status}`];
         }
 
-        // Validate response schema if provided
         if (endpoint.response.schema) {
           const valid = this.ajv.validate(endpoint.response.schema, response.data);
           if (!valid && this.ajv.errors) {
@@ -76,7 +71,6 @@ export class ContractValidator {
           }
         }
 
-        // Validate response headers if provided
         if (endpoint.response.headers) {
           const headerDifferences: string[] = [];
           for (const [key, expectedValue] of Object.entries(endpoint.response.headers)) {
@@ -112,7 +106,6 @@ export class ContractValidator {
       };
 
       if (error.response) {
-        // HTTP error response
         details.response = {
           status: error.response.status,
           headers: error.response.headers,
@@ -120,11 +113,9 @@ export class ContractValidator {
         };
         message = `HTTP ${error.response.status} error: ${error.response.statusText}`;
       } else if (error.request) {
-        // Network error
         details.error = 'No response received';
         message = 'Network error: No response received';
       } else {
-        // Other errors
         details.error = error.message;
         message = `Test execution error: ${error.message}`;
       }
