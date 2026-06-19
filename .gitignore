@@ -67,3 +67,4 @@ temp/
 # os
 .DS_Store
 Thumbs.db
+.env.*
