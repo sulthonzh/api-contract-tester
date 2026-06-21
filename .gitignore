@@ -68,3 +68,9 @@ temp/
 .DS_Store
 Thumbs.db
 .env.*
+
+# python
+__pycache__/
+.venv/
+*.egg-info/
+.mypy_cache/
