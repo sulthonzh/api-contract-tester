@@ -22,7 +22,10 @@
       "./node_modules/@types"
     ],
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "src/**/*"
